@@ -1,0 +1,56 @@
+﻿@page "/"
+@inject HttpClient _httpClient;
+
+<PageTitle>Recipes Home Page</PageTitle>
+<RecipeSearch></RecipeSearch>
+
+@if (Recipes is null)
+{
+    <div>Loading Recipes...</div>
+}
+else
+{
+    <ViewSwitcher Items="Recipes">
+        <CardTemplate Context="recipe">
+            <RecipeCard Recipe="recipe" OnSelectRecipe="OnSelectRecipeEventHandler"></RecipeCard>
+        </CardTemplate>
+        <TableHeaderTemplate>
+            <th>Name</th>
+            <th>Originality</th>
+            <th>Price</th>
+            <th>Time</th>
+            <th>View</th>
+        </TableHeaderTemplate>
+        <TableDetailsTemplate Context="recipe">
+            <td>@recipe.Name</td>
+            <td>@recipe.Originality</td>
+            <td>@recipe.Price</td>
+            <td>@recipe.TimeInString</td>
+            <td>
+                <button class="btn btn-success" @onclick="@(()=>OnSelectRecipeEventHandler(recipe))">Select</button>
+            </td>
+        </TableDetailsTemplate>
+    </ViewSwitcher>
+
+    <RecipeDetail Recipe="SelectedRecipe"></RecipeDetail>
+}
+
+@code {
+    public IEnumerable<Recipe>? Recipes { get; set; }
+    public Recipe? SelectedRecipe { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Recipes = await _httpClient.GetFromJsonAsync<IEnumerable<Recipe>>("/api/Recipes");
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine($"Badness->{ex.Message}");
+        }
+    }
+
+    public void OnSelectRecipeEventHandler(Recipe recipe) => SelectedRecipe = recipe;
+}

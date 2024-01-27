@@ -1,0 +1,49 @@
+﻿@page "/Search/{SearchTerm}"
+@*@page "/Search/{SearchTerm}/MaxTime/{MaxTime:int}"*@
+@inject HttpClient _httpClient
+
+<h3>Result of search: @SearchTerm</h3>
+<hr />
+<SearchFilter MaxTime="@MaxTime" SearchTerm="@SearchTerm"></SearchFilter>
+<hr />
+
+@if (Recipes is null)
+{
+    <div>Loading Recipes...</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+        @foreach (var Recipe in Recipes)
+        {
+            <RecipeCard Recipe="Recipe" OnSelectRecipe="OnSelectRecipeEventHandler"></RecipeCard>
+        }
+    </div>
+    <RecipeDetail Recipe="SelectedRecipe"></RecipeDetail>
+}
+
+@code {
+    [Parameter]
+    public string SearchTerm { get; set; } = string.Empty;
+    [Parameter, SupplyParameterFromQuery]
+    public int MaxTime { get; set; }
+    public IEnumerable<Recipe>? Recipes { get; set; }
+    public Recipe? SelectedRecipe { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Recipes = (await _httpClient.GetFromJsonAsync<IEnumerable<Recipe>>("/Data.json"))
+                ?.Where(r => r.Name.Contains(SearchTerm) || r.Description.Contains(SearchTerm))
+                ?.Where(r => MaxTime == 0 || r.TimeInMinutes <= MaxTime);
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine($"Badness->{ex.Message}");
+        }
+    }
+
+    public void OnSelectRecipeEventHandler(Recipe recipe) => SelectedRecipe = recipe;
+}
